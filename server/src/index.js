@@ -10,9 +10,35 @@ const chatRouter = require("./routes/chat");
 
 const app = express();
 
+// CORS: accept any origin in the comma-separated CLIENT_URL list.
+// Wildcards in CLIENT_URL entries are translated to regexes so deployment
+// preview domains like https://app-git-foo-bar.vercel.app match a
+// pattern like https://app-git-*.vercel.app.
+function compileOriginPatterns(list) {
+  return list.map((entry) => {
+    if (entry.includes("*")) {
+      const pattern = "^" + entry.split("*").map(escapeRegex).join(".*") + "$";
+      return new RegExp(pattern);
+    }
+    return entry;
+  });
+}
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const allowedOrigins = compileOriginPatterns(env.clientUrls);
+
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin(origin, cb) {
+      // Same-origin / curl / server-to-server requests have no Origin header.
+      if (!origin) return cb(null, true);
+      const ok = allowedOrigins.some((p) =>
+        p instanceof RegExp ? p.test(origin) : p === origin
+      );
+      return ok ? cb(null, true) : cb(new Error(`CORS: ${origin} not allowed`));
+    },
     credentials: false,
   })
 );
@@ -42,7 +68,7 @@ async function start() {
   }
   app.listen(env.port, () => {
     logger.info(`Server listening on http://localhost:${env.port}`);
-    logger.info(`CORS allowed origin: ${env.clientUrl}`);
+    logger.info(`CORS allowed origins: ${env.clientUrls.join(", ")}`);
   });
 }
 

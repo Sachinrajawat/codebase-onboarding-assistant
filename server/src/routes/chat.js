@@ -1,5 +1,5 @@
 const express = require("express");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4, validate: uuidValidate } = require("uuid");
 
 const Repo = require("../models/Repo");
 const ChatSession = require("../models/ChatSession");
@@ -9,8 +9,32 @@ const vectorStore = require("../services/vectorStore");
 const llm = require("../services/llm");
 const github = require("../services/github");
 const logger = require("../utils/logger");
+const {
+  validateBody,
+  validateObjectIdParam,
+  schemas,
+} = require("../middleware/validate");
+const { chatLimiter } = require("../middleware/rateLimit");
 
 const router = express.Router();
+
+// Cap how many past messages we keep in a session document. Beyond this we
+// drop the oldest, so the document size stays bounded and prompt context
+// stays fast to load. The LLM is already bounded to the last 6 turns by
+// llm.js — this cap protects MongoDB document size.
+const MAX_STORED_MESSAGES = 50;
+
+// Internal error messages we trust to surface to the user. Anything else is
+// logged server-side and replaced with a generic message.
+function isSafeUserError(err) {
+  if (!err || !err.message) return false;
+  const m = err.message;
+  return (
+    m === "Repo not found" ||
+    m.startsWith("Repo is not ready") ||
+    m.startsWith("OPENAI_API_KEY is not set")
+  );
+}
 
 // Pull "exact name" candidates out of a question for the keyword side of
 // hybrid search. A candidate must look like a code identifier — not just a
@@ -74,13 +98,9 @@ function buildCitations({ repo, results }) {
 //   event: token       -> { delta }
 //   event: done        -> { fullText }
 //   event: error       -> { error }
-router.post("/", async (req, res) => {
-  const { repoId, message } = req.body || {};
-  let { sessionId } = req.body || {};
-
-  if (!repoId || !message) {
-    return res.status(400).json({ error: "repoId and message are required" });
-  }
+router.post("/", chatLimiter, validateBody(schemas.chatBody), async (req, res) => {
+  const { repoId, message } = req.body;
+  let { sessionId } = req.body;
 
   // SSE headers.
   res.setHeader("Content-Type", "text/event-stream");
@@ -115,8 +135,11 @@ router.post("/", async (req, res) => {
 
     const citations = buildCitations({ repo, results });
 
-    // Load or create the chat session.
-    if (!sessionId) sessionId = uuidv4();
+    // Load or create the chat session. We don't trust caller-supplied
+    // sessionIds — if it's not a valid UUID or doesn't already exist, we
+    // mint a new one. This also prevents a caller from hijacking another
+    // user's session by guessing IDs.
+    if (!sessionId || !uuidValidate(sessionId)) sessionId = uuidv4();
     let session = await ChatSession.findOne({ sessionId });
     if (!session) {
       session = await ChatSession.create({
@@ -145,26 +168,39 @@ router.post("/", async (req, res) => {
       },
     });
 
-    // Persist the turn.
-    session.messages.push({ role: "user", content: message });
-    session.messages.push({
-      role: "assistant",
-      content: fullText,
-      citations: citations.map((c) => ({
-        filePath: c.filePath,
-        startLine: c.startLine,
-        endLine: c.endLine,
-        score: c.score,
-      })),
-    });
-    await session.save();
+    // Persist the turn. Use a single $push with $each + $slice so the
+    // document never grows beyond MAX_STORED_MESSAGES even on long sessions.
+    await ChatSession.updateOne(
+      { sessionId },
+      {
+        $push: {
+          messages: {
+            $each: [
+              { role: "user", content: message },
+              {
+                role: "assistant",
+                content: fullText,
+                citations: citations.map((c) => ({
+                  filePath: c.filePath,
+                  startLine: c.startLine,
+                  endLine: c.endLine,
+                  score: c.score,
+                })),
+              },
+            ],
+            $slice: -MAX_STORED_MESSAGES,
+          },
+        },
+      }
+    );
 
     sse("done", { fullText });
     res.end();
   } catch (err) {
-    logger.error(`/api/chat failed: ${err.message}`);
+    logger.error(`/api/chat failed: ${err.stack || err.message}`);
+    const userMessage = isSafeUserError(err) ? err.message : "Chat request failed.";
     try {
-      sse("error", { error: err.message });
+      sse("error", { error: userMessage });
     } catch {
       // Headers may already have been sent; nothing to do.
     }
@@ -174,13 +210,18 @@ router.post("/", async (req, res) => {
 
 // GET /api/chat/session/:sessionId — fetch a session's message history
 router.get("/session/:sessionId", async (req, res) => {
+  if (!uuidValidate(req.params.sessionId)) {
+    return res.status(400).json({ error: "Invalid sessionId" });
+  }
   try {
     const session = await ChatSession.findOne({ sessionId: req.params.sessionId }).lean();
     if (!session) return res.status(404).json({ error: "Session not found" });
     return res.json({ session });
   } catch (err) {
-    return res.status(400).json({ error: err.message });
+    logger.error(`GET /chat/session failed: ${err.stack || err.message}`);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 module.exports = router;
+module.exports.extractKeywordCandidate = extractKeywordCandidate;

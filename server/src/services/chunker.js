@@ -208,7 +208,14 @@ function chunkSource({ source, language, filePath }) {
           },
         });
       }
-      // Still descend, e.g. methods inside a class.
+      // Note: we INTENTIONALLY descend even after emitting a chunk for this
+      // node. A class declaration produces both the class-level chunk
+      // ("what does this class do") AND a per-method chunk for each method
+      // ("what does this specific method do"). The duplication costs a few
+      // extra embeddings but materially improves retrieval recall: questions
+      // about a method find the method chunk, questions about the class find
+      // the class chunk, and the LLM dedupes context implicitly because both
+      // chunks reference the same lines.
     }
     if (cursor.gotoFirstChild()) {
       do {

@@ -8,10 +8,19 @@ function asInt(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// CLIENT_URL accepts a comma-separated list so deployments can whitelist
+// production + preview domains in one variable, e.g.
+//   CLIENT_URL=https://app.example.com,https://app-git-*-foo.vercel.app
+const clientUrls = (process.env.CLIENT_URL || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: asInt(process.env.PORT, 5000),
-  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+  clientUrl: clientUrls[0],
+  clientUrls,
 
   openai: {
     apiKey: process.env.OPENAI_API_KEY || "",

@@ -54,7 +54,8 @@ async function indexRepo({ repoUrl, force = false }) {
     });
   } else {
     repo.status = "indexing";
-    repo.error = undefined;
+    // null (not undefined) so the field is reliably cleared in MongoDB.
+    repo.error = null;
     repo.defaultBranch = meta.defaultBranch;
     repo.collectionName = collectionName;
     await repo.save();
