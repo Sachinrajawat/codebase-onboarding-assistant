@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: radial-gradient(
+        80% 60% at 50% 0%,
+        rgba(59, 130, 246, 0.08) 0%,
+        rgba(2, 6, 23, 0) 60%
+      ),
+      #020617;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 transition hover:border-slate-500 hover:bg-slate-800;
+  }
+  .input {
+    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-0.5 text-xs text-slate-300;
+  }
+}
+
+/* Markdown styling inside chat bubbles. */
+.markdown {
+  @apply text-sm leading-relaxed;
+}
+.markdown p {
+  @apply mb-2;
+}
+.markdown ul,
+.markdown ol {
+  @apply mb-2 ml-5 list-disc;
+}
+.markdown ol {
+  @apply list-decimal;
+}
+.markdown li {
+  @apply mb-1;
+}
+.markdown code {
+  @apply rounded bg-slate-800 px-1 py-0.5 font-mono text-[0.85em] text-amber-200;
+}
+.markdown pre {
+  @apply my-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs;
+}
+.markdown pre code {
+  @apply bg-transparent p-0 text-slate-200;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  @apply mt-3 mb-2 font-semibold text-slate-100;
+}
+.markdown a {
+  @apply text-brand-400 underline underline-offset-2 hover:text-brand-500;
+}
