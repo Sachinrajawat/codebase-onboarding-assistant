@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "nodemon --watch src --ext js,json src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "node --test test/"
   },
   "dependencies": {
     "@octokit/rest": "^21.0.2",

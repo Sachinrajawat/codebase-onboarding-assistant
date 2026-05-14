@@ -6,11 +6,21 @@ const baseURL = import.meta.env.VITE_API_BASE || "/api";
 
 export const api = axios.create({
   baseURL,
-  timeout: 0, // indexing can take a while; let the server decide
+  // Default timeout for normal API calls (e.g. GET /repos/:id).
+  // Indexing requests use a longer per-call override below.
+  timeout: 30_000,
 });
 
+// Indexing a repo can take a few minutes (clone + embed). 10 minutes
+// is generous but not infinite — if we ever hit this, something's wrong.
+const INDEX_TIMEOUT_MS = 10 * 60 * 1000;
+
 export async function analyzeRepo(repoUrl, { force = false } = {}) {
-  const { data } = await api.post("/repos/analyze", { repoUrl, force });
+  const { data } = await api.post(
+    "/repos/analyze",
+    { repoUrl, force },
+    { timeout: INDEX_TIMEOUT_MS }
+  );
   return data.repo;
 }
 
