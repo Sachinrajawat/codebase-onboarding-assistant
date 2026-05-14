@@ -30,16 +30,13 @@ tree-sitter for code chunking, and OpenAI for embeddings and generation.
 - [Deployment](#deployment)
 - [Limitations](#limitations)
 - [Tests](#tests)
-- [On a CV / portfolio](#on-a-cv--portfolio)
 - [Roadmap](#roadmap)
 
 ---
 
 ## Demo
 
-**Live: <https://codebase-onboarding-assistant.vercel.app>**
-
-The MVP flow:
+The flow:
 
 1. Paste `https://github.com/owner/repo` on the home page.
 2. Backend clones the repo, chunks it with tree-sitter, embeds the chunks
@@ -169,7 +166,8 @@ That single line prevents most of the hallucinated-method-name problem.
 
 ### Prerequisites
 
-- Node 18+
+- Node 20 (the server pins this in `package.json` `engines` because the
+  Qdrant client trips an `undici` handler check on Node 22+)
 - Docker (for local Qdrant and MongoDB) **or** Qdrant Cloud + MongoDB Atlas accounts
 - One of:
   - An OpenAI API key (recommended quality), **or**
@@ -442,7 +440,7 @@ VITE_API_BASE = https://<your-render-service>.onrender.com/api
 
 ## Limitations
 
-I'd rather call these out up front than have a reviewer catch them.
+Things this MVP deliberately doesn't do — listed here so they're not surprises.
 
 - **Public GitHub repos only.** Authentication for private repos
   (GitHub OAuth) is on the roadmap but not in MVP.
@@ -486,36 +484,6 @@ correctness actually matters:
 cd server
 npm test
 ```
-
-## On a CV / portfolio
-
-Suggested resume bullets (pick 2–3):
-
-```
-Codebase Onboarding Assistant — React, Node.js, Qdrant, OpenAI, tree-sitter
-[GitHub] [Live demo]
-
-  • Built a full-stack RAG application that lets developers chat with any
-    public GitHub repo; clones, AST-chunks (tree-sitter), and embeds 100k+
-    lines of code into Qdrant in under 2 minutes.
-  • Implemented hybrid retrieval (cosine vector search + exact symbol-name
-    keyword filter) and SSE-streamed responses with grounded citations
-    deep-linked to GitHub line ranges.
-  • Designed cost guardrails (file/line/size caps, max_tokens, 24-hour
-    reindex cache) keeping per-repo indexing under $0.001 with
-    text-embedding-3-small; supports a fully free local mode via Ollama.
-  • Production-shaped: zod input validation, express-rate-limit on
-    expensive endpoints, error sanitization, multi-origin CORS, unit tests
-    on the pure-logic pieces.
-```
-
-Interview talking points (covered in the codebase):
-
-- Why AST chunking beats fixed-line chunking — see `server/src/services/chunker.js`.
-- Why hybrid retrieval over pure vector — see `hybridSearch` in `vectorStore.js`.
-- Why SSE over WebSockets for one-way streaming — see `routes/chat.js` and `client/src/api/client.js`.
-- How RAG avoids fine-tuning — see [How RAG works here](#how-rag-works-here).
-- Cost & scale trade-offs — see [Cost & limits](#cost--limits).
 
 ## Roadmap
 
