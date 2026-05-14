@@ -61,7 +61,9 @@ async function dropCollection(name) {
     await client().deleteCollection(name);
     logger.info(`Dropped Qdrant collection: ${name}`);
   } catch (err) {
-    logger.warn(`Failed to drop collection ${name}: ${err.message}`);
+    logger.warn(
+      `Failed to drop collection ${name}:\n${logger.formatError(err)}`
+    );
   }
 }
 

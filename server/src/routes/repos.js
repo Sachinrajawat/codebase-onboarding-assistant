@@ -52,7 +52,9 @@ router.post(
         },
       });
     } catch (err) {
-      logger.error(`analyze failed for ${repoUrl}: ${err.stack || err.message}`);
+      logger.error(
+        `analyze failed for ${repoUrl}:\n${logger.formatError(err)}`
+      );
       const message = isSafeUserError(err)
         ? err.message
         : "Failed to analyze repository.";
