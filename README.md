@@ -1,5 +1,7 @@
 # Codebase Onboarding Assistant
 
+**🚀 Live demo: <https://codebase-onboarding-assistant.vercel.app>**
+
 > Paste a public GitHub repo URL. The app clones it, splits the code into
 > AST-aware chunks, embeds them, and lets you chat with the codebase. Every
 > answer is grounded in retrieved code and cites the exact files and line
@@ -8,6 +10,9 @@
 A small but production-shaped RAG application: React frontend, Express
 backend, Qdrant for vector search, MongoDB for metadata + chat history,
 tree-sitter for code chunking, and OpenAI for embeddings and generation.
+
+> The first request after ~15 minutes idle takes 30–60 s while the free-tier
+> Render backend wakes up. Subsequent requests are instant.
 
 ---
 
@@ -32,8 +37,7 @@ tree-sitter for code chunking, and OpenAI for embeddings and generation.
 
 ## Demo
 
-> Add a screenshot or GIF here once deployed.
-> Live demo: _coming soon_.
+**Live: <https://codebase-onboarding-assistant.vercel.app>**
 
 The MVP flow:
 
