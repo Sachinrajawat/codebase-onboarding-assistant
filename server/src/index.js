@@ -10,6 +10,15 @@ const chatRouter = require("./routes/chat");
 
 const app = express();
 
+// Behind a load balancer / reverse proxy in production (Render, Fly, etc.)
+// the client IP arrives in X-Forwarded-For. Trust exactly one hop so
+// express-rate-limit keys on the real client IP rather than the LB's,
+// which would otherwise treat every visitor as the same caller and either
+// rate-limit them all together or refuse to start at all.
+if (env.nodeEnv === "production") {
+  app.set("trust proxy", 1);
+}
+
 // CORS: accept any origin in the comma-separated CLIENT_URL list.
 // Wildcards in CLIENT_URL entries are translated to regexes so deployment
 // preview domains like https://app-git-foo-bar.vercel.app match a

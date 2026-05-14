@@ -22,6 +22,7 @@ tree-sitter for code chunking, and OpenAI for embeddings and generation.
 - [API reference](#api-reference)
 - [Project layout](#project-layout)
 - [Cost & limits](#cost--limits)
+- [Deployment](#deployment)
 - [Limitations](#limitations)
 - [Tests](#tests)
 - [On a CV / portfolio](#on-a-cv--portfolio)
@@ -383,6 +384,57 @@ questions. The defaults in `.env.example` cap:
 Bump them up via env vars if you need to, but watch your bill.
 
 ---
+
+## Deployment
+
+Production topology (all four hosts have a free tier):
+
+```
+Vercel (free)        Render free          Qdrant Cloud free      MongoDB Atlas free
+┌────────────┐      ┌──────────────┐     ┌──────────────────┐   ┌─────────────────┐
+│ client/    │      │ server/      │     │ vector storage   │   │ repo metadata + │
+│ Vite SPA   │ ───► │ Node/Express │ ──► │ (1 GB free)      │   │ chat sessions   │
+│            │      │ + SSE        │     │                  │   │ (512 MB free)   │
+└────────────┘      └──────────────┘     └──────────────────┘   └─────────────────┘
+                          │
+                          └────► OpenAI API   (gpt-4o-mini + text-embedding-3-small)
+```
+
+**Backend:** Render reads the [`render.yaml`](./render.yaml) blueprint at the
+repo root. New + → Blueprint → pick this repo. Render auto-detects all
+non-secret env vars and prompts you for the secrets.
+
+**Frontend:** Vercel auto-detects Vite. Root Directory = `client`. Set one
+env var:
+
+```
+VITE_API_BASE = https://<your-render-service>.onrender.com/api
+```
+
+**Required env vars on Render** (the secrets the blueprint asks for):
+
+| Variable          | Where it comes from                                            |
+|-------------------|---------------------------------------------------------------|
+| `OPENAI_API_KEY`  | <https://platform.openai.com/api-keys>                        |
+| `MONGODB_URI`     | MongoDB Atlas → Connect → Drivers → SRV string + DB name      |
+| `QDRANT_URL`      | Qdrant Cloud → cluster → endpoint URL                         |
+| `QDRANT_API_KEY`  | Qdrant Cloud → API keys                                       |
+| `CLIENT_URL`      | comma-separated, e.g. `https://app.vercel.app,https://app-git-*.vercel.app` |
+
+**Production gotchas worth knowing:**
+
+- Render's free tier sleeps after ~15 min idle; first request after wake
+  takes 30–60 s. Subsequent requests are instant. Document this in the
+  live demo or upgrade to Starter ($7/mo) for always-on.
+- `EMBED_DIM=1536` for OpenAI's `text-embedding-3-small`. If you re-deploy
+  after dev'ing locally with Ollama (`nomic-embed-text`, 768-dim), drop
+  any pre-existing Qdrant collections so they get recreated at the new
+  dimension. The code does this automatically on `force: true` re-index.
+- Do **not** set `OPENAI_BASE_URL` in production. Leaving it unset points
+  the OpenAI SDK at the real OpenAI API.
+- `app.set('trust proxy', 1)` is enabled when `NODE_ENV=production` so
+  `express-rate-limit` keys on the real client IP via `X-Forwarded-For`
+  instead of the load balancer's IP.
 
 ## Limitations
 

@@ -1,0 +1,75 @@
+# Render blueprint for the Codebase Onboarding Assistant backend.
+#
+# Deploy:
+#   1. Push this file to GitHub.
+#   2. In Render, click  New +  →  Blueprint  →  pick this repo.
+#   3. Render reads this file, creates the service, and prompts you to fill
+#      in the secrets (`sync: false` env vars below).
+#
+# Notes:
+# - Plan is `free`. Free services sleep after ~15 min of inactivity and
+#   take ~30–60 s to wake up on the next request. Upgrade to `starter`
+#   ($7/mo at time of writing) for always-on.
+# - Free tier has no persistent disk; the cloned-repo dir under
+#   `server/tmp/repos/` lives on ephemeral disk and that's fine — we
+#   delete each clone in a `finally{}` block after indexing anyway.
+# - The frontend is deployed separately on Vercel (it's a static SPA).
+#
+# After deploy, set CLIENT_URL to a comma-separated list including:
+#   - your production Vercel URL
+#   - your Vercel preview pattern (https://<app>-git-*.vercel.app)
+#   - localhost (so you can keep dev'ing against this prod backend if you want)
+
+services:
+  - type: web
+    name: codebase-onboarding-assistant
+    runtime: node
+    plan: free
+    region: oregon          # change to a region close to your users
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    autoDeploy: true        # redeploy on every push to the default branch
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # --- LLM (real OpenAI in prod; do NOT set OPENAI_BASE_URL here) ---
+      - key: OPENAI_API_KEY
+        sync: false                       # paste in Render dashboard
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_EMBED_MODEL
+        value: text-embedding-3-small
+      - key: EMBED_DIM
+        value: "1536"                     # text-embedding-3-small is 1536-dim
+
+      # --- Storage ---
+      - key: MONGODB_URI
+        sync: false                       # MongoDB Atlas SRV connection string
+      - key: QDRANT_URL
+        sync: false                       # Qdrant Cloud cluster URL
+      - key: QDRANT_API_KEY
+        sync: false                       # Qdrant Cloud API key
+
+      # --- CORS / frontend whitelist (comma-separated, supports * wildcards) ---
+      - key: CLIENT_URL
+        sync: false                       # e.g. https://<app>.vercel.app,https://<app>-git-*.vercel.app
+
+      # --- Optional: GitHub token for higher API rate limits ---
+      - key: GITHUB_TOKEN
+        sync: false
+
+      # --- Indexing limits (safe defaults; tune if you upgrade off free) ---
+      - key: MAX_FILES_PER_REPO
+        value: "500"
+      - key: MAX_LINES_PER_REPO
+        value: "100000"
+      - key: MAX_FILE_SIZE_BYTES
+        value: "200000"
+      - key: EMBED_BATCH_SIZE
+        value: "64"
+      - key: CACHE_REINDEX_HOURS
+        value: "24"
