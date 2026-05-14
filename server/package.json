@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "type": "commonjs",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "nodemon --watch src --ext js,json src/index.js",
