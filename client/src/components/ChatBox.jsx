@@ -80,17 +80,32 @@ export default function ChatBox({ repoId }) {
           setStreaming(false);
         } else if (type === "error") {
           setError(data.error || "Stream error");
+          dropEmptyAssistantPlaceholder();
           setStreaming(false);
         }
       },
       onError: (err) => {
         setError(err.message || "Streaming failed.");
+        dropEmptyAssistantPlaceholder();
         setStreaming(false);
       },
       onDone: () => {
         setStreaming(false);
       },
     });
+
+    // Helper: remove the trailing assistant message if it never received
+    // any tokens. Otherwise the UI shows a permanent "..." (StreamingDots)
+    // next to a failed turn.
+    function dropEmptyAssistantPlaceholder() {
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === "assistant" && !last.content) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
+    }
     cancelRef.current = cancel;
   }
 

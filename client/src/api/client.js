@@ -37,10 +37,18 @@ export function streamChat({ repoId, sessionId, message, onEvent, onError, onDon
 
   (async () => {
     try {
+      // Only include sessionId in the body when we actually have one.
+      // Sending sessionId: null fails strict validation on the backend;
+      // omitting the key entirely lets the server mint a fresh UUID.
+      const body = { repoId, message };
+      if (typeof sessionId === "string" && sessionId.length > 0) {
+        body.sessionId = sessionId;
+      }
+
       const resp = await fetch(`${baseURL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoId, sessionId, message }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
 

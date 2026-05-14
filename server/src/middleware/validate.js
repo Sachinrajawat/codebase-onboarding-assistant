@@ -34,7 +34,11 @@ const analyzeBody = z
 const chatBody = z
   .object({
     repoId: objectIdString,
-    sessionId: z.string().uuid().optional(),
+    // Accept a UUID, null, or missing. The route handler mints a fresh UUID
+    // when none is supplied, so we don't need to be strict here — and being
+    // strict (zod's .optional() rejects null) breaks the very first call
+    // from a fresh frontend that doesn't yet have a sessionId.
+    sessionId: z.string().uuid().nullish(),
     message: z
       .string()
       .trim()
