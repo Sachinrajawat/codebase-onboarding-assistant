@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, Loader2, User, Bot } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -9,7 +8,6 @@ import { streamChat } from "../api/client.js";
 const SUGGESTIONS = [
   "What does this repo do?",
   "Where is the main entry point?",
-  "How is authentication handled?",
   "Walk me through the request flow.",
   "What tests exist and what do they cover?",
 ];
@@ -24,7 +22,6 @@ export default function ChatBox({ repoId }) {
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    // Auto-scroll to bottom as messages grow.
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -103,34 +100,35 @@ export default function ChatBox({ repoId }) {
   }
 
   return (
-    <div className="card flex h-full flex-col overflow-hidden">
-      <div className="border-b border-slate-800 px-4 py-3">
-        <h2 className="text-sm font-medium text-slate-200">Chat with the codebase</h2>
-        <p className="text-xs text-slate-500">
-          Answers are grounded in retrieved chunks; check the citations on the right.
+    <section className="panel flex h-full flex-col overflow-hidden">
+      {/* Header */}
+      <header className="border-b border-ruleSoft px-5 py-4">
+        <p className="eyebrow">conversation</p>
+        <p className="mt-1 font-mono text-[11px] text-ink-faint">
+          answers grounded in retrieved chunks · citations beneath each reply
         </p>
-      </div>
+      </header>
 
+      {/* Transcript */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-4 overflow-y-auto px-4 py-4"
+        className="flex-1 space-y-8 overflow-y-auto px-6 py-6"
       >
         {messages.length === 0 && (
           <div>
-            <p className="mb-3 text-sm text-slate-400">
-              Try one of these to start:
-            </p>
-            <div className="flex flex-wrap gap-2">
+            <p className="eyebrow mb-3">try one of these</p>
+            <ul className="space-y-1.5 font-mono text-[13px]">
               {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => sendMessage(s)}
-                  className="pill hover:border-brand-500 hover:text-brand-400"
-                >
-                  {s}
-                </button>
+                <li key={s}>
+                  <button
+                    onClick={() => sendMessage(s)}
+                    className="text-ink-muted transition hover:text-accent"
+                  >
+                    <span className="text-ink-faint">›</span> {s}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
@@ -139,17 +137,21 @@ export default function ChatBox({ repoId }) {
         ))}
 
         {error && (
-          <div className="rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-200">
+          <div className="border-l-2 border-bad bg-bad/5 px-3 py-2 font-mono text-[12px] text-bad">
             {error}
           </div>
         )}
       </div>
 
+      {/* Composer */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-slate-800 px-4 py-3"
+        className="border-t border-ruleSoft bg-bg-sub px-4 py-3"
       >
         <div className="flex items-end gap-2">
+          <span className="prompt-prefix pb-2.5 pl-1 font-mono text-sm">
+            ›
+          </span>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -159,63 +161,72 @@ export default function ChatBox({ repoId }) {
                 sendMessage();
               }
             }}
-            placeholder="Ask anything about this repo… (Shift+Enter for newline)"
+            placeholder="ask anything about this repo... (shift+enter for newline)"
             rows={1}
-            className="input max-h-32 min-h-[2.5rem] resize-none"
+            className="max-h-32 min-h-[2.25rem] flex-1 resize-none border-0 bg-transparent px-1 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none"
             disabled={streaming}
           />
-          <button type="submit" className="btn-primary" disabled={streaming || !input.trim()}>
-            {streaming ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+          <button
+            type="submit"
+            disabled={streaming || !input.trim()}
+            className="border border-accent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider2 text-accent transition hover:bg-accent hover:text-bg disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {streaming ? (
+              <span className="inline-flex items-center gap-1.5">
+                streaming
+                <span className="inline-block animate-caret">_</span>
+              </span>
+            ) : (
+              "send ↵"
+            )}
           </button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }
 
 function Message({ message }) {
   const isUser = message.role === "user";
-  return (
-    <div className={`flex gap-3 ${isUser ? "justify-end" : ""}`}>
-      {!isUser && (
-        <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-600/20 text-brand-400">
-          <Bot size={14} />
-        </span>
-      )}
-      <div className={`max-w-[85%] ${isUser ? "order-1" : ""}`}>
-        <div
-          className={
-            isUser
-              ? "rounded-2xl rounded-tr-sm bg-brand-600/90 px-4 py-2 text-sm text-white shadow-sm"
-              : "rounded-2xl rounded-tl-sm border border-slate-800 bg-slate-900/70 px-4 py-3 text-sm text-slate-100"
-          }
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          ) : (
-            <div className="markdown">
-              {message.content ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {message.content}
-                </ReactMarkdown>
-              ) : message.streaming ? (
-                <StreamingDots />
-              ) : null}
-            </div>
-          )}
+
+  if (isUser) {
+    return (
+      <div className="font-mono text-[13px]">
+        <div className="flex items-baseline gap-2">
+          <span className="text-accent">›</span>
+          <span className="eyebrow text-ink-faint">you</span>
         </div>
-        {!isUser && message.citations && message.citations.length > 0 && (
-          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {message.citations.slice(0, 6).map((c, idx) => (
-              <CitationLink key={idx} citation={c} index={idx} />
-            ))}
-          </div>
-        )}
+        <p className="mt-1.5 whitespace-pre-wrap pl-5 text-ink">
+          {message.content}
+        </p>
       </div>
-      {isUser && (
-        <span className="mt-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-300">
-          <User size={14} />
-        </span>
+    );
+  }
+
+  return (
+    <div>
+      <p className="eyebrow mb-2 text-accent-soft">// answer</p>
+      <div className="markdown">
+        {message.content ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {message.content}
+          </ReactMarkdown>
+        ) : message.streaming ? (
+          <StreamingDots />
+        ) : null}
+      </div>
+
+      {message.citations && message.citations.length > 0 && (
+        <div className="mt-4 border-t border-ruleSoft pt-3">
+          <p className="eyebrow mb-2">sources</p>
+          <ul className="space-y-1.5">
+            {message.citations.slice(0, 6).map((c, idx) => (
+              <li key={idx}>
+                <CitationLink citation={c} index={idx} />
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
@@ -224,9 +235,15 @@ function Message({ message }) {
 function StreamingDots() {
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-slate-400" />
-      <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-slate-400 [animation-delay:200ms]" />
-      <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-slate-400 [animation-delay:400ms]" />
+      <span className="h-1 w-1 animate-pulse-dot bg-ink-muted" />
+      <span
+        className="h-1 w-1 animate-pulse-dot bg-ink-muted"
+        style={{ animationDelay: "200ms" }}
+      />
+      <span
+        className="h-1 w-1 animate-pulse-dot bg-ink-muted"
+        style={{ animationDelay: "400ms" }}
+      />
     </span>
   );
 }

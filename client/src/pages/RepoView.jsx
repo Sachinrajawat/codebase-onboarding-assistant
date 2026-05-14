@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
 
 import ChatBox from "../components/ChatBox.jsx";
 import ArchitectureView from "../components/ArchitectureView.jsx";
@@ -22,7 +21,9 @@ export default function RepoView() {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.error || err.message || "Failed to load repo.");
+          setError(
+            err?.response?.data?.error || err.message || "Failed to load repo."
+          );
         }
       })
       .finally(() => {
@@ -35,8 +36,9 @@ export default function RepoView() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-400">
-        <Loader2 className="mr-2 animate-spin" size={16} /> Loading repo…
+      <div className="flex h-full items-center justify-center font-mono text-[12px] text-ink-muted">
+        loading repo
+        <span className="ml-1 inline-block animate-caret">_</span>
       </div>
     );
   }
@@ -44,10 +46,10 @@ export default function RepoView() {
   if (error || !repo) {
     return (
       <div className="mx-auto max-w-xl">
-        <Link to="/" className="btn-ghost mb-4">
-          <ArrowLeft size={14} /> Back
+        <Link to="/" className="btn-ghost mb-6">
+          ← back
         </Link>
-        <div className="card p-6 text-sm text-red-300">
+        <div className="panel border-bad/40 p-5 font-mono text-[13px] text-bad">
           {error || "Repository not found."}
         </div>
       </div>
@@ -55,21 +57,29 @@ export default function RepoView() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-150px)] flex-col gap-3">
+    <div className="flex h-[calc(100vh-160px)] flex-col gap-4">
+      {/* Top utility row */}
       <div className="flex items-center justify-between">
         <Link to="/" className="btn-ghost">
-          <ArrowLeft size={14} /> New repo
+          ← new repo
         </Link>
-        <span className="text-xs text-slate-500">
-          Status:{" "}
-          <span className="font-mono text-slate-300">{repo.status}</span>
+        <span className="font-mono text-[11px] uppercase tracking-wider2 text-ink-faint">
+          status:{" "}
+          <span
+            className={
+              repo.status === "ready" ? "text-good" : "text-ink-muted"
+            }
+          >
+            {repo.status}
+          </span>
         </span>
       </div>
-      <div className="grid flex-1 grid-cols-1 gap-3 lg:grid-cols-3 lg:overflow-hidden">
-        <div className="min-h-0 lg:col-span-1">
+
+      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-12 lg:overflow-hidden">
+        <div className="min-h-0 lg:col-span-5 xl:col-span-4">
           <ArchitectureView repo={repo} />
         </div>
-        <div className="min-h-0 lg:col-span-2">
+        <div className="min-h-0 lg:col-span-7 xl:col-span-8">
           <ChatBox repoId={repo.id || repo._id} />
         </div>
       </div>

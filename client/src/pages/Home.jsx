@@ -15,7 +15,8 @@ export default function Home() {
       const repo = await analyzeRepo(url);
       navigate(`/repo/${repo.id}`);
     } catch (err) {
-      const msg = err?.response?.data?.error || err.message || "Failed to analyze repo.";
+      const msg =
+        err?.response?.data?.error || err.message || "Failed to analyze repo.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -23,7 +24,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center py-10">
+    <div className="py-8 sm:py-14">
       <RepoInput onSubmit={handleAnalyze} loading={loading} error={error} />
     </div>
   );

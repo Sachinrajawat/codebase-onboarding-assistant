@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------- */
+/* Base                                                                     */
+/* ---------------------------------------------------------------------- */
 @layer base {
   html,
   body,
@@ -9,43 +12,105 @@
     height: 100%;
   }
   body {
-    background: radial-gradient(
-        80% 60% at 50% 0%,
-        rgba(59, 130, 246, 0.08) 0%,
-        rgba(2, 6, 23, 0) 60%
-      ),
-      #020617;
+    background: #1c1917;
+    /* Subtle paper-grain dot pattern. Pure CSS, no images.
+       Deliberately faint so it reads as texture, not pattern. */
+    background-image: radial-gradient(
+      rgba(249, 115, 22, 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+    background-position: 0 0;
+  }
+  ::selection {
+    background: rgba(249, 115, 22, 0.35);
+    color: #fff;
+  }
+
+  /* Custom scrollbar — narrow, warm, not OS-default */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #3f3a37;
+    border-radius: 0;
+    border: 2px solid #1c1917;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #57534e;
   }
 }
 
+/* ---------------------------------------------------------------------- */
+/* Components                                                                */
+/* ---------------------------------------------------------------------- */
 @layer components {
-  .card {
-    @apply rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-sm;
+  /* Editorial surface — flat, sharp 1px border, no rounded glassy nonsense */
+  .panel {
+    @apply border border-rule bg-bg-soft;
   }
+  .panel-sub {
+    @apply border border-ruleSoft bg-bg-sub;
+  }
+
+  /* Small all-caps mono label that lives ABOVE a section. Editorial feel. */
+  .eyebrow {
+    @apply font-mono text-[10px] font-medium uppercase tracking-wider2 text-ink-dim;
+  }
+
+  /* A monospace prompt prefix used as a visual cue for inputs */
+  .prompt-prefix {
+    @apply pointer-events-none select-none font-mono text-accent;
+  }
+
+  /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 border border-accent bg-accent px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider2 text-bg transition hover:bg-accent-strong hover:border-accent-strong disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 transition hover:border-slate-500 hover:bg-slate-800;
+    @apply inline-flex items-center justify-center gap-2 border border-rule bg-transparent px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider2 text-ink-muted transition hover:border-accent hover:text-accent;
   }
+
+  /* Input — terminal style, subtle border, focus turns amber */
   .input {
-    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30;
+    @apply w-full bg-bg-sub border border-rule px-3 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
   }
-  .pill {
-    @apply inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800/60 px-2.5 py-0.5 text-xs text-slate-300;
+
+  /* Inline pill/tag — sharp corners, mono, low weight */
+  .tag {
+    @apply inline-flex items-center gap-1 border border-rule bg-bg-sub px-2 py-0.5 font-mono text-[11px] text-ink-muted;
+  }
+  .tag-link {
+    @apply tag hover:border-accent hover:text-accent;
+  }
+
+  /* Horizontal rule with a small gap — used between sections in editorial layouts */
+  .hr-thin {
+    @apply border-t border-ruleSoft;
+  }
+
+  /* A small inline file:line monospace reference */
+  .filepath {
+    @apply font-mono text-[12px] text-ink-muted;
   }
 }
 
-/* Markdown styling inside chat bubbles. */
+/* ---------------------------------------------------------------------- */
+/* Markdown rendering inside the chat transcript                             */
+/* ---------------------------------------------------------------------- */
 .markdown {
-  @apply text-sm leading-relaxed;
+  @apply font-serif text-[15px] leading-7 text-ink;
 }
 .markdown p {
-  @apply mb-2;
+  @apply mb-3;
 }
 .markdown ul,
 .markdown ol {
-  @apply mb-2 ml-5 list-disc;
+  @apply mb-3 ml-5 list-disc;
 }
 .markdown ol {
   @apply list-decimal;
@@ -54,19 +119,25 @@
   @apply mb-1;
 }
 .markdown code {
-  @apply rounded bg-slate-800 px-1 py-0.5 font-mono text-[0.85em] text-amber-200;
+  @apply rounded-none border border-ruleSoft bg-bg-sub px-1 py-0.5 font-mono text-[0.85em] text-accent-soft;
 }
 .markdown pre {
-  @apply my-3 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs;
+  @apply my-3 overflow-x-auto border border-rule bg-bg-deep p-3 font-mono text-[12.5px] leading-relaxed;
 }
 .markdown pre code {
-  @apply bg-transparent p-0 text-slate-200;
+  @apply border-0 bg-transparent p-0 text-ink;
 }
 .markdown h1,
 .markdown h2,
 .markdown h3 {
-  @apply mt-3 mb-2 font-semibold text-slate-100;
+  @apply mt-4 mb-2 font-serif font-semibold text-ink;
 }
+.markdown h1 { @apply text-xl; }
+.markdown h2 { @apply text-lg; }
+.markdown h3 { @apply text-base; }
 .markdown a {
-  @apply text-brand-400 underline underline-offset-2 hover:text-brand-500;
+  @apply text-accent underline decoration-accent/30 underline-offset-4 hover:decoration-accent;
+}
+.markdown blockquote {
+  @apply border-l-2 border-accent pl-4 text-ink-muted italic;
 }
